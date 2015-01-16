@@ -1,0 +1,71 @@
+/******************************************************************************
+* Copyright (c) 2005, 2014  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*   Gabor Tatarka - initial implementation and initial documentation
+*   Attila Balasko
+*   Attila Fulop
+*   Endre Kulcsar
+*   Gabor Szalai
+*   Mate Csorba
+*   Sandor Palugyai
+*   Tibor Csondes
+******************************************************************************/
+
+module DNS_Mapping {
+
+import from DNS_Types all;
+import from UDPasp_Types all;
+import from UDPasp_PortType all;
+
+type record ASP_UDP_DNS {
+  PDU_DNS       dnsMessage,
+  boolean       compressDomainNames optional,
+  boolean       autoLengthCalc optional,
+  AddressType   udpAddress,
+  PortType      udpPort
+}
+
+type port UDPasp_DNS_SP_PT message {
+  inout ASP_UDP_DNS
+} with { extension "internal" }
+
+type component DNS_mapping_CT {
+  port UDPasp_DNS_SP_PT UDP_DNS_PCO;
+  port UDPasp_PT UDP_PCO;
+}
+
+function f_DNS_mapping_behaviour() runs on DNS_mapping_CT
+{
+  var ASP_UDP_DNS vl_dnsmsg;
+  var ASP_UDP vl_udpmsg;
+  map(self:UDP_PCO, system:UDP_PCO);
+  alt {
+    []UDP_PCO.receive(ASP_UDP:?) -> value vl_udpmsg {
+      UDP_DNS_PCO.send(ASP_UDP_DNS: {
+        dec_PDU_DNS(vl_udpmsg.data),
+        omit,
+        omit,
+        vl_udpmsg.addressf,
+        vl_udpmsg.portf
+      });
+      repeat;
+    }
+    []UDP_DNS_PCO.receive(ASP_UDP_DNS:?) -> value vl_dnsmsg {
+      UDP_PCO.send(ASP_UDP: {
+        enc_PDU_DNS(vl_dnsmsg.dnsMessage, vl_dnsmsg.compressDomainNames,
+                    vl_dnsmsg.autoLengthCalc),
+        vl_dnsmsg.udpAddress,
+        vl_dnsmsg.udpPort
+      });
+      repeat;
+    }
+  }
+  unmap(self:UDP_PCO, system:UDP_PCO);
+}
+
+} // end of module

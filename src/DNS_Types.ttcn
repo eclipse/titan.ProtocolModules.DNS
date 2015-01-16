@@ -1,0 +1,294 @@
+/******************************************************************************
+* Copyright (c) 2005, 2014  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*   Gabor Tatarka - initial implementation and initial documentation
+*   Attila Balasko
+*   Attila Fulop
+*   Endre Kulcsar
+*   Gabor Szalai
+*   Mate Csorba
+*   Sandor Palugyai
+*   Tibor Csondes
+******************************************************************************/
+//
+//  File:               DNS_Types.ttcn
+//  Description:        Type definitions for DNS messages
+//  Rev:                R7A
+//  Prodnr:             CNL 113 429
+//
+
+module DNS_Types {
+
+external function enc_PDU_DNS( 
+  in PDU_DNS msg,
+  in boolean doCompression,
+  in boolean autoLengthCalc) return octetstring;
+
+external function dec_PDU_DNS( in octetstring stream ) return PDU_DNS;
+
+//////////////////////
+// DNS Message Type //
+//////////////////////
+
+  type record PDU_DNS {
+    DnsHeader             header,
+    QResourceRecords      queries,
+    ResourceRecords       answers,
+    ResourceRecords       nameServerRecords,
+    ResourceRecords       additionalRecords
+  }
+
+  type record of QResourceRecord QResourceRecords;
+  type record of ResourceRecord ResourceRecords;
+
+
+////////////////
+// DNS Header //
+////////////////
+
+  type record DnsHeader {
+    UInt16                id,
+    QueryOrResponse       qr,
+    OpCode                opCode,
+    boolean               aa,       // Authoritive Answer
+    boolean               tc,       // Truncation
+    boolean               rd,       // Recursion Desired
+    boolean               ra,       // Recursion Available
+    bitstring             z length(3), // reserved, must be '000'B
+    ResponseCode          rCode,
+    UInt16                qdCount,  // Number of queries in this message
+    UInt16                anCount,  // Number of answers in this message
+    UInt16                nsCount,  // Number of name server resource records
+    UInt16                arCount   // Number of additional resource records
+  }
+
+  type enumerated QueryOrResponse { DNS_QUERY(0), DNS_RESPONSE(1) }
+
+  type integer OpCode (0 .. 15);
+    // predefined values for OpCode:
+    const OpCode DNS_OP_QUERY  := 0;
+    const OpCode DNS_OP_IQUERY := 1;
+    const OpCode DNS_OP_STATUS := 2;
+    // extension for DNS Update
+    const OpCode DNS_OP_UPDATE := 5;
+    // 3..15: reserved
+
+  type integer ResponseCode (0 .. 15);
+    // predefined values for ResponseCode:
+    const ResponseCode DNS_NO_ERROR        := 0;
+    const ResponseCode DNS_FORMAT_ERROR    := 1;
+    const ResponseCode DNS_SERVER_FAILURE  := 2;
+    const ResponseCode DNS_NAME_ERROR      := 3;
+    const ResponseCode DNS_NOT_IMPLEMENTED := 4;
+    const ResponseCode DNS_REFUSED         := 5;
+    // extension for DNS Update
+    const ResponseCode DNS_YXDOMAIN        := 6;
+    const ResponseCode DNS_YXRRSET         := 7;
+    const ResponseCode DNS_NXRRSET         := 8;
+    const ResponseCode DNS_NOTAUTH         := 9;
+    const ResponseCode DNS_NOTZONE         := 10;
+    
+   // 6..15: reserved
+
+
+///////////////////////////
+// Resource Record Types //
+///////////////////////////
+
+  type record QResourceRecord {
+    DomainName    qName,
+    RRType        qType,
+    RRClass       qClass
+  }
+
+  type record ResourceRecord {
+    DomainName    name,
+    RRType        rrType,   // resource record type
+    RRClass       rrClass,  // resource record class
+    UInt32        ttl,      // time to live (in seconds/hops)
+    UInt16        rdLength, // resource data length
+    ResourceData  rData     // resource data
+  }
+
+
+///////////////////////////////
+// Types and classes for RRs //
+///////////////////////////////
+
+  type integer RRType (0 .. 65535);
+  // predefined valuese for RRType:
+    const RRType DNS_A        := 1;    // a host address
+    const RRType DNS_NS       := 2;    // an authoritative name server
+    const RRType DNS_MD       := 3;    // mail destination (obsolate - use MX)
+    const RRType DNS_MF       := 4;    // a mail forwarder (obsolate - use MX)
+    const RRType DNS_CNAME    := 5;    // the canonical name for an alias
+    const RRType DNS_SOA      := 6;    // marks the start of a zone authority
+    const RRType DNS_MB       := 7;    // a mail box domain name (experimental)
+    const RRType DNS_MG       := 8;    // a mail group member (experimental)
+    const RRType DNS_MR       := 9;    // a mail rename domain name (experimental)
+    const RRType DNS_NULL     := 10;   // a null resource record (experimental)
+    const RRType DNS_WKS      := 11;   // a well known service description
+    const RRType DNS_PTR      := 12;   // a domain name pointer
+    const RRType DNS_HINFO    := 13;   // host information
+    const RRType DNS_MINFO    := 14;   // mailbox or mail list information
+    const RRType DNS_MX       := 15;   // a mail exchange
+    const RRType DNS_TXT      := 16;   // text strings
+    const RRType DNS_AAAA     := 28;   // an IPv6 host address
+    const RRType DNS_SRV      := 33;   // location of services (SRV)
+    const RRType DNS_NAPTR    := 35;   // Naming Authority Pointer (NAPTR)
+
+  // Query specific RRType values:
+    const RRType DNS_AXFR       := 252;  // a request for a transfer of an entire zone
+    const RRType DNS_MAILB      := 253;  // a request for mailbox-related records (MB, MG, MR)
+    const RRType DNS_MAILA      := 254;  // a request for mail agent RRs (obsolate - use MX)
+    const RRType DNS_ALLRECORDS := 255;  // * - a request for all records
+
+  type integer RRClass (0 .. 65535);
+  // predefined values for RRClass:
+    const RRClass DNS_IN        := 1;    // the Internet
+    const RRClass DNS_CS        := 2;    // the CSNET class (obsolate)
+    const RRClass DNS_CH        := 3;    // the CHAOS class
+    const RRClass DNS_HS        := 4;    // Hesiod [Dyer 87]
+  // Query specific values for RRClass:
+    const RRClass DNS_ANYCLASS    := 255;  // * - any class
+  // extension for DNS Update
+    const RRClass DNS_NONE        := 254;  // the NONE class
+
+//////////////////////////
+// Resource record data //
+//////////////////////////
+
+  type union ResourceData {
+    RDataCName  cName,
+    RDataHInfo  hInfo,
+    RDataMB     mb,
+    RDataMD     md,
+    RDataMF     mf,
+    RDataMG     mg,
+    RDataMInfo  mInfo,
+    RDataMR     mr,
+    RDataMX     mx,
+    RDataNull   rd_null,
+    RDataNS     ns,
+    RDataPTR    ptr,
+    RDataSOA    soa,
+    RDataTXT    txt,
+    RDataA      a,
+    RDataWKS    wks,
+    RDataSRV    srv,
+    RDataNAPTR  naptr,    
+    RDataAAAA   aaaa,
+    octetstring unsupported,  // for unsupported RR data types and classes
+    octetstring undecodable   // for supported but undecodable data
+  }
+
+
+//////////////////////////////
+// Standard RR data formats //
+//////////////////////////////
+
+// CNAME - canonical name for the owner
+  type DomainName RDataCName;
+
+// HInfo - host info
+  type record RDataHInfo {
+    CharStr255    cpu, // CPU
+    CharStr255    os   // Operating system
+  }
+
+// MB - host which has the specified mailbox
+  type DomainName RDataMB;
+
+// MD - mail deliver
+  type DomainName RDataMD;
+
+// MF - mail forwarding
+  type DomainName RDataMF;
+
+// MG - mail group
+  type DomainName RDataMG;
+
+// MINFO - mailbox info
+  type record RDataMInfo {
+    DomainName    rMailBx,  // mailing list or mailbox
+    DomainName    eMailBx   // Error mail list or mailbox
+  }
+
+// MR - mailbox rename
+  type DomainName RDataMR;
+
+// MX - mail exchange
+  type record RDataMX {
+    UInt16        preference,
+    DomainName    exchange
+  }
+
+// NULL - can be anything, no more than 65535 octets
+  type octetstring RDataNull length(0 .. 65535);
+
+// NS - name server (authoritative)
+  type DomainName RDataNS;
+
+// PTR - pointer to some location in the domain name space
+  type DomainName RDataPTR;
+
+// SOA - start of authority
+  type record RDataSOA {
+    DomainName  mName, // primary name server
+    DomainName  rName, // responsible authority's mail box
+    UInt32      serial,
+    UInt32      refresh,
+    UInt32      retry,
+    UInt32      expire,
+    UInt32      minimum
+  }
+
+// TXT - text data
+  type record of CharStr255 RDataTXT;
+
+// A - 32 bit internet address
+  type UInt32 RDataA;
+
+// WKS - well known services
+  type record RDataWKS {
+    UInt32        addr,
+    UInt8         protocol,
+    octetstring   bitmap
+  }
+
+// SRV - server selection record
+  type record RDataSRV {
+    UInt16        priority,
+    UInt16        weight,    
+    UInt16        portnum,    
+    DomainName    target
+  }
+  
+// NAPTR - Naming Authority Pointer
+  type record RDataNAPTR {
+    UInt16        order,
+    UInt16        preference,    
+    CharStr255    flags,
+    CharStr255    services,        
+    CharStr255    regexpString,        
+    DomainName    replacement
+  }
+  
+// AAAA - 128 bit IPv6 address   
+  type octetstring RDataAAAA length(16);
+         
+///////////////////////////////////
+// General types for this module //
+///////////////////////////////////
+  type integer UInt8 (0 .. 255);
+  type integer UInt16 (0 .. 65535);
+  type octetstring UInt32 length(4);
+  type charstring CharStr255 length(0 .. 255);
+  type CharStr255 DomainName;
+
+} // end of module

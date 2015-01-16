@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright (c) 2014 Ericsson
+
+  All rights reserved. This program and the accompanying materials
+  are made available under the terms of the Eclipse Public License v1.0
+  which accompanies this distribution, and is available at
+  http://www.eclipse.org/legal/epl-v10.html
+ -->
+<TITAN_Project_File_Information version="1.0">
+  <ProjectName>DNS_CNL113429_demo</ProjectName>
+  <ReferencedProjects>
+    <ReferencedProject name="DNS_CNL113429" projectLocationURI="../DNS_CNL113429.tpd"/>
+    <ReferencedProject name="UDPasp_CNL113346" projectLocationURI="../../../TestPorts/UDPasp_CNL113346/UDPasp_CNL113346.tpd"/>
+  </ReferencedProjects>
+  <Files>
+    <FileResource projectRelativePath="DNS_Demo.ttcn" relativeURI="DNS_Demo.ttcn"/>
+    <FileResource projectRelativePath="DNS_Mapping.ttcn" relativeURI="DNS_Mapping.ttcn"/>
+    <FileResource projectRelativePath="config.cfg" relativeURI="config.cfg"/>
+    <FileResource projectRelativePath="readme.txt" relativeURI="readme.txt"/>
+  </Files>
+  <ActiveConfiguration>Default</ActiveConfiguration>
+  <Configurations>
+    <Configuration name="Default">
+      <ProjectProperties>
+        <MakefileSettings>
+          <generateInternalMakefile>true</generateInternalMakefile>
+          <GNUMake>true</GNUMake>
+          <incrementalDependencyRefresh>true</incrementalDependencyRefresh>
+          <targetExecutable>bin/DNS_CNL113429_demo</targetExecutable>
+        </MakefileSettings>
+        <LocalBuildSettings>
+          <workingDirectory>bin</workingDirectory>
+        </LocalBuildSettings>
+        <NamingCoventions>
+          <enableProjectSpecificSettings>true</enableProjectSpecificSettings>
+          <externalFunction>.*</externalFunction>
+          <globalPort>.*</globalPort>
+          <localTimer>.*</localTimer>
+          <formalParameter>.*</formalParameter>
+        </NamingCoventions>
+      </ProjectProperties>
+    </Configuration>
+  </Configurations>
+</TITAN_Project_File_Information>

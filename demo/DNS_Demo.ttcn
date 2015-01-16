@@ -1,0 +1,1135 @@
+/******************************************************************************
+* Copyright (c) 2005, 2014  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*   Gabor Tatarka - initial implementation and initial documentation
+*   Attila Balasko
+*   Attila Fulop
+*   Endre Kulcsar
+*   Gabor Szalai
+*   Mate Csorba
+*   Sandor Palugyai
+*   Tibor Csondes
+******************************************************************************/
+
+module DNS_Demo {
+
+import from DNS_Types all;
+import from DNS_Mapping all;
+
+type record PtrAssignment {
+  charstring name,
+  charstring ptr
+}
+
+type record AddrAssignment {
+  charstring name,
+  UInt32 ipAddr
+}
+
+type record SrvAssignment {
+  charstring name,
+  RDataSRV srv
+}
+
+type record NaptrAssignment {
+  charstring name,
+  RDataNAPTR naptr
+}
+
+
+
+type record of PtrAssignment PtrAssignments;
+type record of AddrAssignment AddrAssignments;
+type record of SrvAssignment SrvAssignments;
+type record of NaptrAssignment NaptrAssignments;
+
+
+type component Test_CT {
+  port UDPasp_DNS_SP_PT UDP_DNS_PCO;
+}
+
+const float cg_tcTimeout := 30.0;
+
+const PtrAssignments cg_ptrAssignments := {
+  {
+    "1.0.0.127.in-addr.arpa",
+    "MyComputer.TTCN-3"
+  },
+  {
+    "97.197.107.159.in-addr.arpa",
+    "heintel"
+  }  
+}
+
+const AddrAssignments cg_addrAssignments := {
+  {
+    "heintel.eth.ericsson.se",
+    '9f6bc561'O
+  },  
+  {
+    "foobar.eth.ericsson.se",
+    '7f000003'O
+  },
+  {
+    "hello.eth.ericsson.se",
+    '7f000004'O
+  },
+  {
+    "advance.eth.ericsson.se",
+    '7f000005'O
+  },
+  {
+    "www.ericsson.se",
+    int2oct(153,1) & int2oct(88,1) & int2oct(253,1) & int2oct(44,1)
+  }
+}
+
+const SrvAssignments cg_srvAssignments := {
+  {
+    "_foobar._tcp",
+    {
+      priority := 0,
+      weight := 1,    
+      portnum := 9000,
+      target := "foobar.eth.ericsson.se"
+    }
+  },
+  {
+    "_hello._tcp",
+    {
+      priority := 0,
+      weight := 2,    
+      portnum := 9000,
+      target := "foobar.eth.ericsson.se"
+    }
+  },
+  {
+    "_hello._tcp",
+    {
+      priority := 0,
+      weight := 1,    
+      portnum := 9000,
+      target := "advance.eth.ericsson.se"
+    }
+  },
+  {
+    "_hello._tcp",
+    {
+      priority := 1,
+      weight := 99,    
+      portnum := 9000,
+      target := "hello.eth.ericsson.se"
+    }
+  }
+}
+
+const NaptrAssignments cg_naptrAssignments := {
+  {
+    "heintel.eth.ericsson.se",
+    {
+      order := 100,
+      preference := 10,
+      flags := "u",
+      services := "smtp+E2U",
+      regexpString := "!^.*$!mailto:information@foo.se!i",
+      replacement := ""
+    }
+  },
+  {
+    "foobar.eth.ericsson.se",
+    {
+      order := 1,
+      preference := 2,
+      flags := "u",
+      services := "smtp+E2U",
+      regexpString := "",
+      replacement := "!^.*$!mailto:mail@foobar.eth.ericsson.se!i"
+    }
+  },
+  {
+    "hello.eth.ericsson.se",
+    {
+      order := 100,
+      preference := 50,
+      flags := "a",
+      services := "z3950+N2L+N2C",
+      regexpString := "",
+      replacement := "cidserver.example.com"
+    }
+  },
+  {
+    "hello.eth.ericsson.se",
+    {
+      order := 100,
+      preference := 50,
+      flags := "a",
+      services := "rcds+N2C",
+      regexpString := "",
+      replacement := "cidserver.example.com"
+    }
+  },
+  {
+    "hello.eth.ericsson.se",
+    {
+      order := 100,
+      preference := 50,
+      flags := "s",
+      services := "http+N2L+N2C+N2R",
+      regexpString := "",
+      replacement := "www.example.com"
+    }
+  },
+  {
+    "7.6.5.4.3.2.1.1.6.3.e164.arpa",
+    {
+      order := 10,
+      preference := 100,
+      flags := "u",
+      services := "E2U+sip",
+      regexpString := "!^.*$!sip:info@example.com!",
+      replacement := ""
+    }
+  }
+}
+
+
+///////////////////////
+// receive templates
+
+template ASP_UDP_DNS tr_DNS_ptr := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := ?,
+        qType := DNS_PTR,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+template ASP_UDP_DNS tr_DNS_address := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := ?,
+        qType := DNS_A,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+template ASP_UDP_DNS tr_DNS_srv := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := ?,
+        qType := DNS_SRV,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+template ASP_UDP_DNS tr_DNS_srv_nameparam(charstring pl_name) := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := pl_name,
+        qType := DNS_SRV,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+
+template ASP_UDP_DNS tr_DNS_naptr := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := ?,
+        qType := DNS_NAPTR,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+
+template ASP_UDP_DNS tr_DNS_naptr_nameparam(charstring pl_name) := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := pl_name,
+        qType := DNS_NAPTR,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+template ASP_UDP_DNS tr_DNS_naptr_answer(charstring pl_name) := {
+  dnsMessage := {
+    header := {
+      id := ?,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := ?,
+      tc := ?,
+      rd := ?,
+      ra := ?,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := ?,
+      anCount := ?,
+      nsCount := ?,
+      arCount := ?
+    },
+    queries := {
+      {
+        qName := pl_name,
+        qType := DNS_NAPTR,
+        qClass := DNS_IN
+      }
+    },
+    answers := ?,
+    nameServerRecords := ?,
+    additionalRecords := ?
+  },
+  compressDomainNames := *,
+  autoLengthCalc := *,
+  udpAddress := ?,
+  udpPort := ?
+}
+
+
+
+////////////////////
+// send templates
+
+template ASP_UDP_DNS t_DNS_ptr(ASP_UDP_DNS pl_rmsg,
+                        DomainName pl_answer,
+                        boolean pl_compress) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := 1,
+      nsCount := pl_rmsg.dnsMessage.header.nsCount,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := {
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_PTR,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          ptr := pl_answer
+        }
+      }
+    },
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := pl_compress,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+template ASP_UDP_DNS t_DNS_address(ASP_UDP_DNS pl_rmsg,
+                        UInt32 pl_answer,
+                        boolean pl_compress) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := 1,
+      nsCount := pl_rmsg.dnsMessage.header.nsCount,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := {
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_A,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          a := pl_answer
+        }
+      }
+    },
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := pl_compress,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+template ASP_UDP_DNS t_DNS_nameError(ASP_UDP_DNS pl_rmsg) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NAME_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := pl_rmsg.dnsMessage.header.anCount,
+      nsCount := pl_rmsg.dnsMessage.header.nsCount,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := pl_rmsg.dnsMessage.answers,
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := true,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+template ASP_UDP_DNS t_DNS_srv_answer(ASP_UDP_DNS pl_rmsg,
+                        RDataSRV pl_answer,
+                        boolean pl_compress) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := 1,
+      nsCount := pl_rmsg.dnsMessage.header.nsCount,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := {
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_SRV,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          srv := pl_answer
+        }
+      }
+    },
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := pl_compress,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+
+template ASP_UDP_DNS t_DNS_srv_3_answers(ASP_UDP_DNS pl_rmsg,
+                        RDataSRV pl_answer1,
+                        RDataSRV pl_answer2,
+                        RDataSRV pl_answer3,
+                        boolean pl_compress) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := 3,
+      nsCount := pl_rmsg.dnsMessage.header.nsCount,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := {
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_SRV,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          srv := pl_answer1
+        }
+      },
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_SRV,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          srv := pl_answer2
+        }
+      },
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_SRV,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          srv := pl_answer3
+        }
+      }            
+    },
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := pl_compress,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+
+template ASP_UDP_DNS t_DNS_naptr_3_answers(ASP_UDP_DNS pl_rmsg,
+                        RDataNAPTR pl_answer1,
+                        RDataNAPTR pl_answer2,
+                        RDataNAPTR pl_answer3,
+                        boolean pl_compress) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := 3,
+      nsCount := pl_rmsg.dnsMessage.header.nsCount,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := {
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_NAPTR,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          naptr := pl_answer1
+        }
+      },
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_NAPTR,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          naptr := pl_answer2
+        }
+      },
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_NAPTR,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          naptr := pl_answer3
+        }
+      }            
+    },
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := pl_compress,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+
+template ASP_UDP_DNS t_DNS_naptr_answer(ASP_UDP_DNS pl_rmsg,
+                        RDataNAPTR pl_answer,
+                        boolean pl_compress) := {
+  dnsMessage := {
+    header := {
+      id := pl_rmsg.dnsMessage.header.id,
+      qr := DNS_RESPONSE,
+      opCode := DNS_OP_QUERY,
+      aa := true,
+      tc := false,
+      rd := true,
+      ra := true,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := pl_rmsg.dnsMessage.header.qdCount,
+      anCount := 1,
+      nsCount := 0, //1,
+      arCount := pl_rmsg.dnsMessage.header.arCount
+    },
+    queries := pl_rmsg.dnsMessage.queries,
+    answers := {
+      {
+        name := pl_rmsg.dnsMessage.queries[0].qName,
+        rrType := DNS_NAPTR,
+        rrClass := DNS_IN,
+        ttl := '00015800'O,
+        rdLength := 0,
+        rData := {
+          naptr := pl_answer
+        }
+      }      
+    },
+    nameServerRecords := pl_rmsg.dnsMessage.nameServerRecords,
+    additionalRecords := pl_rmsg.dnsMessage.additionalRecords
+  },
+  compressDomainNames := pl_compress,
+  autoLengthCalc := true,
+  udpAddress := pl_rmsg.udpAddress,
+  udpPort := pl_rmsg.udpPort
+}
+
+
+template ASP_UDP_DNS t_DNS_NAPTRquery( charstring pl_ipAddr, DomainName pl_query ) := {
+  dnsMessage := {
+    header := {
+      id := 9999,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := false,
+      tc := false,
+      rd := false,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := 0,
+      nsCount := 0,
+      arCount := 0
+    },
+    queries := {
+      {
+        qName := pl_query,
+        qType := DNS_NAPTR,
+        qClass := DNS_IN
+      }
+    },
+    answers := {},
+    nameServerRecords := {},
+    additionalRecords := {}
+  },
+  compressDomainNames := false,
+  autoLengthCalc := true,
+  udpAddress := pl_ipAddr,
+  udpPort := 53
+}
+
+
+template ASP_UDP_DNS t_DNS_SRVquery( charstring pl_ipAddr, DomainName pl_query ) := {
+  dnsMessage := {
+    header := {
+      id := 9999,
+      qr := DNS_QUERY,
+      opCode := DNS_OP_QUERY,
+      aa := false,
+      tc := false,
+      rd := false,
+      ra := false,
+      z := '000'B,
+      rCode := DNS_NO_ERROR,
+      qdCount := 1,
+      anCount := 0,
+      nsCount := 0,
+      arCount := 0
+    },
+    queries := {
+      {
+        qName := pl_query,
+        qType := DNS_SRV,
+        qClass := DNS_IN
+      }
+    },
+    answers := {},
+    nameServerRecords := {},
+    additionalRecords := {}
+  },
+  compressDomainNames := false,
+  autoLengthCalc := true,
+  udpAddress := pl_ipAddr,
+  udpPort := 53
+}
+
+// end of templates
+
+
+testcase tc_1() runs on Test_CT {
+  var ASP_UDP_DNS vl_rmsg;
+  var DNS_mapping_CT vlc_dnsComponent := DNS_mapping_CT.create;
+  var integer vl_ctr;
+  var boolean vl_found;
+  timer Tl_idle;
+  connect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+  vlc_dnsComponent.start(f_DNS_mapping_behaviour());
+
+  Tl_idle.start(cg_tcTimeout);
+  alt {
+    []UDP_DNS_PCO.receive(tr_DNS_ptr) -> value vl_rmsg {
+      vl_found := false;
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_ptrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_ptrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_ptr(vl_rmsg,cg_ptrAssignments[vl_ctr].ptr,true));
+          vl_found := true;
+        }
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+    []UDP_DNS_PCO.receive(tr_DNS_address) -> value vl_rmsg {
+      vl_found := false;
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_addrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_addrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_address(vl_rmsg,cg_addrAssignments[vl_ctr].ipAddr,true));
+          vl_found := true;
+        }
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+    []UDP_DNS_PCO.receive(ASP_UDP_DNS:?) -> value vl_rmsg {
+      UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+    []Tl_idle.timeout {
+      log("Timeout.");
+    }
+  }
+
+  vlc_dnsComponent.stop;
+  disconnect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+}
+
+
+testcase tc_srv_naptr() runs on Test_CT {
+  var ASP_UDP_DNS vl_rmsg;
+  var DNS_mapping_CT vlc_dnsComponent := DNS_mapping_CT.create;
+  var integer vl_ctr;
+  var boolean vl_found;
+
+  timer Tl_idle;
+  connect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+  vlc_dnsComponent.start(f_DNS_mapping_behaviour());
+
+  Tl_idle.start(cg_tcTimeout);
+  alt {
+    [] UDP_DNS_PCO.receive(tr_DNS_ptr) -> value vl_rmsg {
+      vl_found := false;
+      log("...ptr query received...");
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_ptrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_ptrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_ptr(vl_rmsg,cg_ptrAssignments[vl_ctr].ptr,true));
+          vl_found := true;
+        }
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+    [] UDP_DNS_PCO.receive(tr_DNS_address) -> value vl_rmsg {
+      vl_found := false;
+      log("...address query received...");
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_addrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_addrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_address(vl_rmsg,cg_addrAssignments[vl_ctr].ipAddr,true));
+          vl_found := true;
+        }
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+      
+    []  UDP_DNS_PCO.receive(tr_DNS_srv) -> value vl_rmsg {
+      vl_found := false;
+      log("...SRV query received...");
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_srvAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_srvAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_srv_answer(vl_rmsg,cg_srvAssignments[vl_ctr].srv,true));
+          vl_found := true;
+        }
+        
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat
+    }
+    []  UDP_DNS_PCO.receive(tr_DNS_naptr) -> value vl_rmsg {
+      vl_found := false;
+      log("...NAPTR query received...");
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_naptrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+               
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_naptrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_naptr_answer(vl_rmsg,cg_naptrAssignments[vl_ctr].naptr, false));
+          vl_found := true;
+        }
+        
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat
+    }
+    []  UDP_DNS_PCO.receive(ASP_UDP_DNS:?) -> value vl_rmsg {
+      log("...unrecognized query received...");
+      UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat
+    }
+    []  Tl_idle.timeout {
+      log("Timeout.");
+    }
+  }
+
+  vlc_dnsComponent.stop;
+  disconnect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+}
+
+
+testcase tc_multiple_srv_naptr() runs on Test_CT {
+  var ASP_UDP_DNS vl_rmsg;
+  var DNS_mapping_CT vlc_dnsComponent := DNS_mapping_CT.create;
+  var integer vl_ctr;
+  var boolean vl_found;
+
+  timer Tl_idle;
+  connect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+  vlc_dnsComponent.start(f_DNS_mapping_behaviour());
+
+  Tl_idle.start(cg_tcTimeout);
+  alt {
+    [] UDP_DNS_PCO.receive(tr_DNS_ptr) -> value vl_rmsg {
+      vl_found := false;
+      log("...ptr query received...");
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_ptrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_ptrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_ptr(vl_rmsg,cg_ptrAssignments[vl_ctr].ptr,true));
+          vl_found := true;
+        }
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+    [] UDP_DNS_PCO.receive(tr_DNS_address) -> value vl_rmsg {
+      vl_found := false;
+      log("...address query received...");
+      for(vl_ctr:=0;
+          (vl_ctr<sizeof(cg_addrAssignments)) and (vl_found == false);
+          vl_ctr:=vl_ctr+1) {
+        if(vl_rmsg.dnsMessage.queries[0].qName==cg_addrAssignments[vl_ctr].name) {
+          UDP_DNS_PCO.send(t_DNS_address(vl_rmsg,cg_addrAssignments[vl_ctr].ipAddr,true));
+          vl_found := true;
+        }
+      }
+      if(vl_found == false) {
+        UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      }
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat;
+    }
+      
+    []  UDP_DNS_PCO.receive(tr_DNS_srv_nameparam("_hello._tcp")) -> value vl_rmsg {
+      log("...SRV query received...");
+      UDP_DNS_PCO.send(t_DNS_srv_3_answers(vl_rmsg,  cg_srvAssignments[1].srv, cg_srvAssignments[2].srv, cg_srvAssignments[3].srv, true));
+ 
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat
+    }
+    []  UDP_DNS_PCO.receive(tr_DNS_naptr_nameparam("hello.eth.ericsson.se")) -> value vl_rmsg {
+      log("...NAPTR query received...");
+      UDP_DNS_PCO.send(t_DNS_naptr_3_answers(vl_rmsg,  cg_naptrAssignments[2].naptr, cg_naptrAssignments[3].naptr, cg_naptrAssignments[4].naptr, true));
+ 
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat
+    }
+    []  UDP_DNS_PCO.receive(ASP_UDP_DNS:?) -> value vl_rmsg {
+      log("...unrecognized query received...");
+      UDP_DNS_PCO.send(t_DNS_nameError(vl_rmsg));
+      Tl_idle.stop;
+      Tl_idle.start(cg_tcTimeout);
+      repeat
+    }
+    []  Tl_idle.timeout {
+      log("Timeout.");
+    }
+  }
+
+  vlc_dnsComponent.stop;
+  disconnect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+}
+
+testcase tc_enumquery() runs on Test_CT {
+  var ASP_UDP_DNS vl_rmsg;
+  var DNS_mapping_CT vlc_dnsComponent := DNS_mapping_CT.create;
+
+  timer Tl_idle;
+  connect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+  vlc_dnsComponent.start(f_DNS_mapping_behaviour());
+
+  // send a query
+  UDP_DNS_PCO.send(t_DNS_NAPTRquery("ns1.al.sw.ericsson.se", "6.1.4.6.5.0.5.1.3.4.e164.arpa" ));
+
+
+  // wait for reply
+  Tl_idle.start(5.0);
+  alt {
+    [] UDP_DNS_PCO.receive(tr_DNS_naptr_answer("6.1.4.6.5.0.5.1.3.4.e164.arpa")) -> value vl_rmsg {
+      log("...NAPTR answer received...");
+      log(vl_rmsg);
+      setverdict(pass)      
+    }
+    []  UDP_DNS_PCO.receive(ASP_UDP_DNS:?) -> value vl_rmsg {
+      log("...unrecognized DNS msg received...");
+      repeat
+    }
+    []  Tl_idle.timeout {
+      log("...Timeout...");
+      setverdict(fail)
+    }
+  }
+
+  vlc_dnsComponent.stop;
+  disconnect(self:UDP_DNS_PCO, vlc_dnsComponent:UDP_DNS_PCO);
+}
+
+
+control {
+//  execute(tc_1());
+//  execute(tc_srv_naptr());
+//  execute(tc_multiple_srv_naptr());
+  execute(tc_enumquery());
+}
+
+} // end of module

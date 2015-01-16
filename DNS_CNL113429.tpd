@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright (c) 2014 Ericsson
+
+  All rights reserved. This program and the accompanying materials
+  are made available under the terms of the Eclipse Public License v1.0
+  which accompanies this distribution, and is available at
+  http://www.eclipse.org/legal/epl-v10.html
+
+
+   File:               DNS_CNL113429.tpd
+   Description:        tpd project file
+   Rev:                R7A
+   Prodnr:             CNL 113 429
+
+ -->
+<TITAN_Project_File_Information version="1.0">
+  <ProjectName>DNS_CNL113429</ProjectName>
+  <Files>
+    <FileResource projectRelativePath="DNS_EncDec.cc" relativeURI="src/DNS_EncDec.cc"/>
+    <FileResource projectRelativePath="DNS_Types.ttcn" relativeURI="src/DNS_Types.ttcn"/>
+  </Files>
+  <ActiveConfiguration>Default</ActiveConfiguration>
+  <Configurations>
+    <Configuration name="Default">
+      <ProjectProperties>
+        <MakefileSettings>
+          <generateInternalMakefile>true</generateInternalMakefile>
+          <GNUMake>true</GNUMake>
+          <incrementalDependencyRefresh>true</incrementalDependencyRefresh>
+          <targetExecutable>bin/DNS_CNL113429</targetExecutable>
+          <buildLevel>Level 3 - Creating object files with dependency update</buildLevel>
+        </MakefileSettings>
+        <LocalBuildSettings>
+          <workingDirectory>bin</workingDirectory>
+        </LocalBuildSettings>
+      </ProjectProperties>
+    </Configuration>
+  </Configurations>
+</TITAN_Project_File_Information>
