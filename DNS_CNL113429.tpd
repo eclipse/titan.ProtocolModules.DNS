@@ -10,7 +10,7 @@
 
    File:               DNS_CNL113429.tpd
    Description:        tpd project file
-   Rev:                R7A
+   Rev:                R7B
    Prodnr:             CNL 113 429
 
  -->
@@ -29,11 +29,18 @@
           <GNUMake>true</GNUMake>
           <incrementalDependencyRefresh>true</incrementalDependencyRefresh>
           <targetExecutable>bin/DNS_CNL113429</targetExecutable>
-          <buildLevel>Level 3 - Creating object files with dependency update</buildLevel>
+          <buildLevel>Level3-Creatingobjectfileswithdependencyupdate</buildLevel>
         </MakefileSettings>
         <LocalBuildSettings>
           <workingDirectory>bin</workingDirectory>
         </LocalBuildSettings>
+        <NamingCoventions>
+          <enableProjectSpecificSettings>true</enableProjectSpecificSettings>
+          <globalConstant>.*</globalConstant>
+          <externalFunction>.*</externalFunction>
+          <localVariable>.*</localVariable>
+          <formalParameter>.*</formalParameter>
+        </NamingCoventions>
       </ProjectProperties>
     </Configuration>
   </Configurations>

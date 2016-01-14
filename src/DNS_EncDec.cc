@@ -18,7 +18,7 @@
 //
 //  File:               DNS_EncDec.cc
 //  Description:        en/decoding functions for DNS messages
-//  Rev:                R7A
+//  Rev:                R7B
 //  Prodnr:             CNL 113 429
 //
 
