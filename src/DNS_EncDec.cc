@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2005, 2014  Ericsson AB
+* Copyright (c) 2005, 2018  Ericsson AB
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
@@ -18,7 +18,7 @@
 //
 //  File:               DNS_EncDec.cc
 //  Description:        en/decoding functions for DNS messages
-//  Rev:                R7B
+//  Rev:                R7C
 //  Prodnr:             CNL 113 429
 //
 
@@ -1106,8 +1106,8 @@ domain_names::~domain_names()
 size_t domain_names::write_domain_name(const char *name, TTCN_Buffer& buf,
     bool do_compression)
 {
-  if(name==NULL || *name=='\0') {
-    TTCN_warning("While encoding domain name: domain name is empty.");
+  if( (name==NULL) || (*name=='\0') || ( (name[0]=='.') && (name[1]=='\0'))) {
+    // empty domain name
     buf.put_c(0);
     return 1;
   }
@@ -1115,8 +1115,6 @@ size_t domain_names::write_domain_name(const char *name, TTCN_Buffer& buf,
 
   // Domain name should not start or end with a dot.
   if(*name=='.') TTCN_error("Domain name should not start with a dot: \"%s\".",
-    name);
-  if(*end_p=='.') TTCN_error("Domain name should not end with a dot: \"%s\".",
     name);
 
   char lbl[64];
