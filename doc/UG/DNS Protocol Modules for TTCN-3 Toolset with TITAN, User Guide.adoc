@@ -1,0 +1,202 @@
+---
+Author: Endre Kulcsár
+Version: 198 17-CNL 113 429, Rev. E
+Date: 2011-11-29
+
+---
+= DNS Protocol Modules for TTCN-3 Toolset with TITAN, Function Specification
+:author: Endre Kulcsár
+:revnumber: 198 17-CNL 113 429, Rev. E
+:revdate: 2011-11-29
+:toc:
+
+== About This Document
+
+=== How to Read This Document
+
+This is the User Guide for the set of DNS protocol modules. DNS protocol modules are developed for the TTCN-3 Toolset with TITAN. This document should be read together with Function Specification <<_3, [3]>>.
+
+=== Presumed Knowledge
+
+To use this protocol module the knowledge of the TTCN-3 core-language <<_1, [1]>> and the DNS protocol described in RFC 1035 <<_4, [4]>> is essential.
+
+== System Requirements
+
+The set of DNS protocol modules are a set of source code files that can only be used as part of a TTCN-3 test suite. Hence, protocol modules alone do not put specific requirements on the system used. However in order to compile and execute a TTCN-3 test suite using a set of protocol modules the following system requirements must be satisfied:
+
+* TITAN TTCN-3 Test Executor R7A (1.7.pl0) or higher installed. For installation guide see <<_2, [2]>>.
+
+NOTE: This version of the protocol module is not compatible with TITAN releases earlier than R7A.
+
+= Protocol Modules
+
+== Overview
+
+Protocol modules implement the message structure of the related protocol in a formalized way, using the standard specification language TTCN-3. This allows definition of test data (templates) in TTCN-3 core-language <<_1, [1]>> and correct encoding/decoding of messages during execution of test suites using the TITAN TTCN-3 test environment.
+
+The DNS protocol module implements the following functions:
+
+[source]
+----
+dec_PDU_DNS(in octetstring stream) return PDU_DNS;
+enc_PDU_DNS(in PDU_DNS msg, in boolean doCompression, in boolean autoLengthCalc) return octetstring;
+----
+
+The function `dec_PDU_DNS` decodes an octetstring that represents an encoded DNS message. Unsupported resource records (see Function Specification <<_3, [3]>>) will be decoded into field `unsupported` and erroneous resource records will be decoded into field `undecodable` of rData, both fields are of type octetstring. These fields can also be used to encode erroneous or unsupported data. Decoded DNS messages are in uncompressed format.
+
+The function `enc_PDU_DNS` encodes a DNS message given as TTCN-3 data into an octetstring. The latter function has two additional boolean parameters. Parameter `doCompression` specifies whether the encoder should compress domain names or encode them uncompressed. Parameter `autoLengthCalc` specifies whether the encoder should calculate and substitute length fields in resource records automatically. Calculating length fields manually is not recommended unless it is required to encode a faulty DNS message. Fields `qdCount`, `anCount`, `nsCount` and `arCount` of DNS messages are not automatically calculated
+
+NOTE: If resource records are passed to templates as parameters then `sizeof` can be used to calculate these.
+
+== Installation
+
+The Test Port and the protocol module can be used for the development of TTCN-3 test suites. Since the DNS protocol module is used as part of a TTCN-3 test suite, this requires TTCN-3 Test Executor to be installed before the module can be compiled and executed together with other parts of the test suite. For more details on the installation of TTCN-3 Test Executor see the relevant section of <<_2, [2]>>.
+
+The following steps are needed to use the DNS protocol module:
+
+. Copy the source file (__DNS_EncDec.cc__) and the definition module (__DNS_Types.ttcn__) into the directory of the test suite or create symbolic links to them.
+. Import module `DNS_Types` to the module(s) where the DNS protocol module is used.
+. Create a _Makefile_ or modify the existing one.
+
+== Configuration
+
+None.
+
+= Error Messages
+
+The following error messages can occur while using the DNS protocol module. The error messages are self-explanatory:
+
+`*Error decoding DNS header. Stream doesn’t contain enough octets.*`
+
+`*Error decoding query resource record: not enough octets.*`
+
+`*Error decoding label at octet #_n_: label length is greater than 63, but is not a pointer (_0xXX_).*`
+
+`*Label pointer at octet #_n_ in domain name refers after end of stream.*`
+
+`*Error decoding label: not enough octets. Remaining bytes: _n_, length of label: _m_*`
+
+`*Error decoding resource record: not enough octets. Resource record starts at octet #_n_, number of octets in message: _m_.*`
+
+`*Error encoding DNS header: field 'z' must have a length of 3.*`
+
+`*Domain name should not start with a dot: "…".*`
+
+`*Domain name should not end with a dot: "…".*`
+
+`*Label in domain name is longer than 63 characters: "…"*`
+
+= Warning Messages
+
+The following warning messages can occur while using the DNS protocol module. The warning messages are self-explanatory:
+
+`*While encoding PDU_DNS: 'header.qdCount' (_n_) differs from size of `queries' (_m_).*`
+
+`*While encoding PDU_DNS: 'header.anCount' (_n_) differs from size of `answers' (_m_).*`
+
+`*While encoding PDU_DNS: 'header.nsCount' (_n_) differs from size of `nameServerRecords' (_m_).*`
+
+`*While encoding PDU_DNS: 'header.arCount' (_n_) differs from size of `additionalRecords' (_m_).*`
+
+`*Forward reference in compressed domain name at octet #_n_.*`
+
+`*While decoding resource record: not enough octets, decoding to field `undecodable'. Resource record starts at octet #_n_.*`
+
+`*Resource record class _n_ is not supported. rData will be decoded to field 'unsupported'.*`
+
+`*While decoding address resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding SOA resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding WKS resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding WKS resource record: rdLength is less than 6. Decoding to field 'undecodable'.*`
+
+`*While decoding HINFO resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding MX resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding AAAA resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding SRV resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*While decoding NAPTR resource record: not enough octets, decoding to field 'undecodable'.*`
+
+`*Resource record type _n_ is not supported. RData will be decoded to field 'unsupported'.*`
+
+`*While decoding resource record: rdLength (_n_) does not equal the length of decoded resource record data (_m_). Resource record starts at octet #_k_.*`
+
+`*Length of rData (_n_) in octets differs from rdLength (_m_) in resource record: "…"*`
+
+`*While encoding domain name: domain name is empty.*`
+
+`*In case of Resource record class n rdLength and ttl fields must be zero. rData will be decoded to field 'unsupported'.*`
+
+= Examples
+
+The demo directory of the deliverable contains the following examples:
+
+* __DNS_Types.ttcn__ - definition module.
+* __DNS_EncDec.cc__ - source file.
+* __DNS_Demo.ttcn__ - demo testcases for DNS protocol module.
+* __DNS_Mapping.ttcn__ - mapping module.
+* _Makefile_
+* __UDPasp_PortType.ttcn__ - port type definition for UDP test port (CNL 113 346).
+* __UDPasp_Types.ttcn__ - type definitions for UDP test port.
+* __UDPasp_PT.cc__ - source file of UDP test port.
+* __UDPasp_PT.hh__ - header file of UDP test port.
+* _config.cfg_ - example runtime configuration file.
+* _readme.txt_ - brief description of how to use the demo.
+
+= Terminology
+
+No specific terminology is used.
+
+= Abbreviations
+
+ASP:: Abstract Service Primitive
+
+DDDS:: Dynamic Delegation Discovery System
+
+DNS:: Domain Name System
+
+DNS RR:: Domain Name System Resource Record
+
+PDU:: Protocol Data Unit
+
+RFC:: Request For Comments
+
+TTCN-3:: Testing and Test Control Notation version 3
+
+= References
+
+[[_1]]
+[1] ETSI ES 201 873-1 v3.1.1 (2005-06) +
+The Testing and Test Control Notation version 3; Part 1: Core Language
+
+[[_2]]
+Programmer’s Technical Reference for TITAN TTCN-3 Test Executor
+
+[[_3]]
+[3] DNS Protocol Modules for TTCN-3 Toolset with TITAN, Function Specification
+
+[[_4]]
+[4] http://www.ietf.org/rfc/rfc1035.txt?number=1035[RFC 1035] +
+Domain names – Implementation and specification
+
+[[_5]]
+[5] http://www.ietf.org/rfc/rfc2782.txt?number=2782[RFC 2782] +
+A DNS RR for specifying the location of services (DNS SRV)
+
+[[_6]]
+[6] http://www.ietf.org/rfc/rfc3403.txt?number=3403[RFC 3403] +
+Dynamic Delegation Discovery System (DDDS), Part Three: The Domain Name System (DNS) Database
+
+[[_7]]
+[7] http://www.ietf.org/rfc/rfc2136.txt?number=2136[RFC 2136] +
+Dynamic Updates in the Domain Name System (DNS UPDATE)
+
+[[_8]]
+[8] http://www.ietf.org/rfc/rfc1886.txt?number=1886[RFC 1886] +
+DNS Extensions to support IP version 6
+

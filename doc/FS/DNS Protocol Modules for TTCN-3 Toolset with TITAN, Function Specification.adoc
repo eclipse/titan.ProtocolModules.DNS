@@ -1,0 +1,107 @@
+---
+Author: Endre Kulcsár
+Version: 155 17-CNL 113 429, Rev. D
+Date: 2011-11-29
+
+---
+= DNS Protocol Modules for TTCN-3 Toolset with TITAN, Function Specification
+:author: Endre Kulcsár
+:revnumber: 155 17-CNL 113 429, Rev. D
+:revdate: 2011-11-29
+:toc:
+
+== How to Read This Document
+
+This is the Function Specification for the set of DNS protocol modules. DNS protocol modules are developed for the TTCN-3 Toolset with TITAN.
+
+== Scope
+
+The purpose of this document is to specify the content of the DNS Test Port and the additional modules containing TTCN-3 type definitions.
+
+= General
+
+The Test Port and the included protocol modules implement message structures of the related protocol in a formalized way, using the standard specification language TTCN-3. Thus allowing definition of test data (using templates) in TTCN-3 core-language format <<_4, [4]>>. The Test Port assures encoding/decoding of messages during test suite execution using the TITAN TTCN-3 test environment.
+
+The DNS protocol modules use external encoding and decoding functions.
+
+The DNS PDU in TTCN-3 is represented in an uncompressed format.
+
+= Functional Specification
+
+== Protocol Versions Implemented
+
+This Protocol Module implements protocol messages and constants of the DNS protocol as decribed in <<_1, [1]>>, <<_2, [2]>>, <<_3, [3]>>, <<_6, [6]>>, <<_7, [7]>> with the modifications specified in <<modifications-deviations-related-to-the-protocol-specification, Modifications/Deviations Related to the Protocol Specification>> Also, valid NAPTR queries and responses needed by the ENUM protocol (specified in <<_5, [5]>>) can be sent and received via the Test Port.
+
+[[modifications-deviations-related-to-the-protocol-specification]]
+== Modifications/Deviations Related to the Protocol Specification
+
+=== Unimplemented Messages, Message Fields and Constants
+
+Only the message fields related to Internet and IP are implemented. DNS resource records with class `CS` (CSNET), `CH` (CHAOS) and `HS` (Hesoid) are not supported but will be decoded into a TTCN-3 octetstring.
+
+[[protocol-modifications-deviations]]
+=== Protocol Modifications/Deviations
+
+None.
+
+[[encoding-decoding-and-other-related-functions]]
+== Encoding/Decoding and Other Related Functions
+
+This product also contains encoding/decoding functions, which assure correct encoding and compression of messages when sent from TITAN, and correct decoding and decompression of messages when received by TITAN. Implemented encoding/decoding functions:
+
+[cols=",,",options="header",]
+|=====================================================
+|Name |Type of formal parameters |Type of return value
+|`enc_PDU_DNS` |PDU_DNS, boolean, boolean |octetstring
+|`dec_PDU_DNS` |octetstring |PDU_DNS
+|=====================================================
+
+The decoder function can handle both compressed and uncompressed format and the PDU will be visible in uncompressed format in TTCN-3.
+
+The encoder function can be instructed by a boolean parameter to perform compression and by a second boolean parameter to automatically calculate length fields.
+
+= Terminology
+
+No specific terminology is used.
+
+= Abbreviations
+
+ASP:: Abstract Service Primitive
+
+DNS:: Domain Name System
+
+IP:: Internet Protocol
+
+PDU:: Protocol Data Unit
+
+TTCN-3:: Testing and Test Control Notation version 3
+
+= References
+
+[[_1]]
+[1] http://www.ietf.org/rfc/rfc1035.txt?number=1035[RFC 1035] +
+Domain names – Implementation and specification
+
+[[_2]]
+[2] http://www.ietf.org/rfc/rfc2782.txt?number=2782[RFC 2782] +
+A DNS RR for specifying the location of services (DNS SRV)
+
+[[_3]]
+[3] http://www.ietf.org/rfc/rfc3403.txt?number=3403[RFC 3403] +
+Dynamic Delegation Discovery System (DDDS), Part Three: The Domain Name System (DNS) Database
+
+[[_4]]
+[4] ETSI ES 201 873-1 v3.1.1 (2005-06) +
+The Testing and Test Control Notation version 3; Part 1: Core Language
+
+[[_5]]
+[5] http://www.ietf.org/rfc/rfc3761.txt?number=3761[RFC 3761] +
+The E.164 to Uniform Resource Identifiers (URI) Dynamic Delegation Discovery System (DDDS) Application (ENUM)
+
+[[_6]]
+[6] http://www.ietf.org/rfc/rfc2136.txt?number=2136[RFC 2136] +
+Dynamic Updates in the Domain Name System (DNS UPDATE)
+
+[[_7]]
+[7] http://www.ietf.org/rfc/rfc1886.txt?number=1886[RFC 1886] +
+DNS Extensions to support IP version 6
